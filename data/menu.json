@@ -1,0 +1,63 @@
+[
+  {
+    "chave": "home",
+    "titulo": "Home"
+  },
+  {
+    "chave": "sobre",
+    "titulo": "Quem somos?"
+  },
+  {
+    "chave": "liderança",
+    "titulo": "Liderança"
+  },
+  {
+    "chave": "comercial",
+    "titulo": "Time comercial"
+  },
+  {
+    "chave": "consultores",
+    "titulo": "Nossos consultores",
+    "pai": "comercial"
+  },
+  {
+    "chave": "regiões",
+    "titulo": "Regiões atendidas",
+    "pai": "comercial"
+  },
+  {
+    "chave": "canais",
+    "titulo": "Canais e construção",
+    "pai": "comercial"
+  },
+  {
+    "chave": "portfolio",
+    "titulo": "Portfólio"
+  },
+  {
+    "chave": "métodos",
+    "titulo": "Métodos construtivos",
+    "pai": "portfolio"
+  },
+  {
+    "chave": "produtos",
+    "titulo": "Principais produtos",
+    "pai": "portfolio"
+  },
+  {
+    "chave": "ferramentas",
+    "titulo": "Ferramentas"
+  },
+  {
+    "chave": "vendas",
+    "titulo": "Processo de vendas"
+  },
+  {
+    "chave": "indicadores",
+    "titulo": "Indicadores e metas"
+  },
+  {
+    "chave": "politicas",
+    "titulo": "Política comercial"
+  }
+]
