@@ -162,6 +162,18 @@ app.get('/', async (req, res) => {
   }
 });
 
+// Health check e teste de conexão ao banco
+app.get('/', async (req, res) => {
+  try {
+    // Executa uma query simples só para testar a conexão
+    await prisma.$queryRaw`SELECT 1`;
+    res.send('🎉 Backend conectado ao DB com sucesso!');
+  } catch (e) {
+    console.error('❌ Erro de conexão com o DB:', e);
+    res.status(500).send('❌ Falha na conexão com o DB');
+  }
+});
+
 // INICIA O SERVIDOR (deve ficar por último!)
 app.listen(PORT, () => {
   console.log(`🔐 Backend rodando em http://localhost:${PORT}`);
