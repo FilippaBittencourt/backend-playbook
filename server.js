@@ -3,10 +3,13 @@ const session = require('express-session');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { encontrarUsuario } = require('./usuarios');
+const { PrismaClient } = require('@prisma/client'); // Importado aqui em cima
 
+const prisma = new PrismaClient();
 const app = express();
 const PORT = 3001;
 
+// Middlewares
 app.use(cors({
   origin: 'http://localhost:8080', // endereço do seu Vite
   credentials: true
@@ -47,7 +50,108 @@ app.post('/logout', (req, res) => {
   });
 });
 
-// INICIA O SERVIDOR
+// ATUALIZA conteúdo
+app.put('/conteudo/:chave', async (req, res) => {
+  const { chave } = req.params;
+  const { valor } = req.body;
+
+  try {
+    const resultado = await prisma.conteudo.upsert({
+      where: { chave },
+      update: { valor },
+      create: { chave, valor },
+    });
+
+    res.json({ sucesso: true, resultado });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: 'Erro ao salvar o conteúdo' });
+  }
+});
+
+// BUSCA conteúdo
+app.get('/conteudo/:chave', async (req, res) => {
+  const { chave } = req.params;
+
+  try {
+    const resultado = await prisma.conteudo.findUnique({
+      where: { chave },
+    });
+
+    if (!resultado) {
+      return res.status(404).json({ erro: 'Conteúdo não encontrado' });
+    }
+
+    res.json({ chave: resultado.chave, valor: resultado.valor });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: 'Erro ao buscar o conteúdo' });
+  }
+});
+
+// CRIA novo conteúdo
+app.post('/conteudo', async (req, res) => {
+  const { chave, valor } = req.body;
+
+  try {
+    const existente = await prisma.conteudo.findUnique({
+      where: { chave },
+    });
+
+    if (existente) {
+      return res.status(400).json({ erro: 'Chave já existe. Use PUT para atualizar.' });
+    }
+
+    const novo = await prisma.conteudo.create({
+      data: { chave, valor },
+    });
+
+    res.status(201).json({ sucesso: true, conteudo: novo });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: 'Erro ao criar o conteúdo' });
+  }
+});
+
+// LISTA todos os conteúdos
+app.get('/conteudos', async (req, res) => {
+  try {
+    const conteudos = await prisma.conteudo.findMany({
+      orderBy: { chave: 'asc' } // opcional: ordena alfabeticamente
+    });
+
+    res.json(conteudos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: 'Erro ao listar os conteúdos' });
+  }
+});
+
+// DELETA conteúdo por chave
+app.delete('/conteudo/:chave', async (req, res) => {
+  const { chave } = req.params;
+
+  try {
+    const existente = await prisma.conteudo.findUnique({
+      where: { chave },
+    });
+
+    if (!existente) {
+      return res.status(404).json({ erro: 'Conteúdo não encontrado' });
+    }
+
+    await prisma.conteudo.delete({
+      where: { chave },
+    });
+
+    res.json({ sucesso: true, mensagem: `Conteúdo '${chave}' deletado com sucesso.` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: 'Erro ao deletar o conteúdo' });
+  }
+});
+
+// INICIA O SERVIDOR (deve ficar por último!)
 app.listen(PORT, () => {
   console.log(`🔐 Backend rodando em http://localhost:${PORT}`);
 });
