@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const { encontrarUsuario } = require('./usuarios');
 const { PrismaClient } = require('@prisma/client'); // Importado aqui em cima
 
+console.log('🔍 DATABASE_URL =', process.env.DATABASE_URL);
 const prisma = new PrismaClient();
 const app = express();
 const PORT = 3001;
