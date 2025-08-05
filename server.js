@@ -151,6 +151,17 @@ app.delete('/conteudo/:chave', async (req, res) => {
   }
 });
 
+app.get('/', async (req, res) => {
+  try {
+    // Apenas um teste de conexão simples ao banco
+    await prisma.$queryRaw`SELECT 1`;
+    res.send('🎉 Backend conectado ao DB com sucesso!');
+  } catch (e) {
+    console.error('Erro de conexão:', e);
+    res.status(500).send('❌ Falha na conexão com o DB');
+  }
+});
+
 // INICIA O SERVIDOR (deve ficar por último!)
 app.listen(PORT, () => {
   console.log(`🔐 Backend rodando em http://localhost:${PORT}`);
