@@ -9,7 +9,7 @@ console.log("✅ Iniciando server.js...");
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT) || 3001;
 
 const isProduction = process.env.NODE_ENV === 'production';
 
