@@ -8,7 +8,6 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
-// Detecta se está em produção (ex: Railway)
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Frontend permitido
