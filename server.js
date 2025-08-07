@@ -3,39 +3,24 @@ const session = require('express-session');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { encontrarUsuario } = require('./usuarios');
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client'); // Importado aqui em cima
 
-console.log("✅ Iniciando server.js...");
-
-const app = express();
+console.log('🔍 DATABASE_URL =', process.env.DATABASE_URL);
 const prisma = new PrismaClient();
-const PORT = parseInt(process.env.PORT) || 3001;
-
-const isProduction = process.env.NODE_ENV === 'production';
-
-// Frontend permitido
-const FRONTEND_ORIGIN = isProduction
-  ? 'https://seu-front.vercel.app' // 🔁 Altere aqui para seu domínio real
-  : 'http://localhost:8080';
+const app = express();
+const PORT = 3001;
 
 // Middlewares
 app.use(cors({
-  origin: FRONTEND_ORIGIN,
+  origin: 'http://localhost:8080', // endereço do seu Vite
   credentials: true
 }));
-
 app.use(bodyParser.json());
-
-// Sessão com cookie seguro em produção
 app.use(session({
   secret: 'segredoPolar',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-  }
+  cookie: { secure: false } // não usar "secure: true" sem HTTPS
 }));
 
 // LOGIN
@@ -62,16 +47,11 @@ app.get('/verificar-autenticacao', (req, res) => {
 // LOGOUT
 app.post('/logout', (req, res) => {
   req.session.destroy(() => {
-    res.clearCookie('connect.sid', {
-      path: '/',
-      sameSite: isProduction ? 'none' : 'lax',
-      secure: isProduction
-    });
     res.json({ sucesso: true });
   });
 });
 
-// CRUD: Conteúdos
+// ATUALIZA conteúdo
 app.put('/conteudo/:chave', async (req, res) => {
   const { chave } = req.params;
   const { valor } = req.body;
@@ -82,6 +62,7 @@ app.put('/conteudo/:chave', async (req, res) => {
       update: { valor },
       create: { chave, valor },
     });
+
     res.json({ sucesso: true, resultado });
   } catch (error) {
     console.error(error);
@@ -89,11 +70,19 @@ app.put('/conteudo/:chave', async (req, res) => {
   }
 });
 
+// BUSCA conteúdo
 app.get('/conteudo/:chave', async (req, res) => {
   const { chave } = req.params;
+
   try {
-    const resultado = await prisma.conteudo.findUnique({ where: { chave } });
-    if (!resultado) return res.status(404).json({ erro: 'Conteúdo não encontrado' });
+    const resultado = await prisma.conteudo.findUnique({
+      where: { chave },
+    });
+
+    if (!resultado) {
+      return res.status(404).json({ erro: 'Conteúdo não encontrado' });
+    }
+
     res.json({ chave: resultado.chave, valor: resultado.valor });
   } catch (error) {
     console.error(error);
@@ -101,13 +90,23 @@ app.get('/conteudo/:chave', async (req, res) => {
   }
 });
 
+// CRIA novo conteúdo
 app.post('/conteudo', async (req, res) => {
   const { chave, valor } = req.body;
-  try {
-    const existente = await prisma.conteudo.findUnique({ where: { chave } });
-    if (existente) return res.status(400).json({ erro: 'Chave já existe. Use PUT para atualizar.' });
 
-    const novo = await prisma.conteudo.create({ data: { chave, valor } });
+  try {
+    const existente = await prisma.conteudo.findUnique({
+      where: { chave },
+    });
+
+    if (existente) {
+      return res.status(400).json({ erro: 'Chave já existe. Use PUT para atualizar.' });
+    }
+
+    const novo = await prisma.conteudo.create({
+      data: { chave, valor },
+    });
+
     res.status(201).json({ sucesso: true, conteudo: novo });
   } catch (error) {
     console.error(error);
@@ -115,9 +114,13 @@ app.post('/conteudo', async (req, res) => {
   }
 });
 
+// LISTA todos os conteúdos
 app.get('/conteudos', async (req, res) => {
   try {
-    const conteudos = await prisma.conteudo.findMany({ orderBy: { chave: 'asc' } });
+    const conteudos = await prisma.conteudo.findMany({
+      orderBy: { chave: 'asc' } // opcional: ordena alfabeticamente
+    });
+
     res.json(conteudos);
   } catch (error) {
     console.error(error);
@@ -125,13 +128,23 @@ app.get('/conteudos', async (req, res) => {
   }
 });
 
+// DELETA conteúdo por chave
 app.delete('/conteudo/:chave', async (req, res) => {
   const { chave } = req.params;
-  try {
-    const existente = await prisma.conteudo.findUnique({ where: { chave } });
-    if (!existente) return res.status(404).json({ erro: 'Conteúdo não encontrado' });
 
-    await prisma.conteudo.delete({ where: { chave } });
+  try {
+    const existente = await prisma.conteudo.findUnique({
+      where: { chave },
+    });
+
+    if (!existente) {
+      return res.status(404).json({ erro: 'Conteúdo não encontrado' });
+    }
+
+    await prisma.conteudo.delete({
+      where: { chave },
+    });
+
     res.json({ sucesso: true, mensagem: `Conteúdo '${chave}' deletado com sucesso.` });
   } catch (error) {
     console.error(error);
@@ -139,9 +152,9 @@ app.delete('/conteudo/:chave', async (req, res) => {
   }
 });
 
-// Health Check
 app.get('/', async (req, res) => {
   try {
+    // Apenas um teste de conexão simples ao banco
     await prisma.$queryRaw`SELECT 1`;
     res.send('🎉 Backend conectado ao DB com sucesso!');
   } catch (e) {
@@ -150,9 +163,19 @@ app.get('/', async (req, res) => {
   }
 });
 
-// Inicia servidor
+// Health check e teste de conexão ao banco
+app.get('/', async (req, res) => {
+  try {
+    // Executa uma query simples só para testar a conexão
+    await prisma.$queryRaw`SELECT 1`;
+    res.send('🎉 Backend conectado ao DB com sucesso!');
+  } catch (e) {
+    console.error('❌ Erro de conexão com o DB:', e);
+    res.status(500).send('❌ Falha na conexão com o DB');
+  }
+});
+
+// INICIA O SERVIDOR (deve ficar por último!)
 app.listen(PORT, () => {
   console.log(`🔐 Backend rodando em http://localhost:${PORT}`);
-}).on('error', (err) => {
-  console.error('❌ Erro ao iniciar o servidor:', err);
 });
