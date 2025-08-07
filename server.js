@@ -4,6 +4,9 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const { encontrarUsuario } = require('./usuarios');
 const { PrismaClient } = require('@prisma/client');
+
+console.log("✅ Iniciando server.js...");
+
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
@@ -12,7 +15,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Frontend permitido
 const FRONTEND_ORIGIN = isProduction
-  ? 'https://seu-front.vercel.app' // 🔁 Altere aqui para seu domínio real (ex: Vercel)
+  ? 'https://seu-front.vercel.app' // 🔁 Altere aqui para seu domínio real
   : 'http://localhost:8080';
 
 // Middlewares
@@ -23,15 +26,15 @@ app.use(cors({
 
 app.use(bodyParser.json());
 
-// Sessão com cookie de produção seguro
+// Sessão com cookie seguro em produção
 app.use(session({
   secret: 'segredoPolar',
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: isProduction, // true em produção (HTTPS), false local
-    sameSite: isProduction ? 'none' : 'lax', // 'none' para cross-site cookies
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
   }
 }));
 
@@ -150,4 +153,6 @@ app.get('/', async (req, res) => {
 // Inicia servidor
 app.listen(PORT, () => {
   console.log(`🔐 Backend rodando em http://localhost:${PORT}`);
+}).on('error', (err) => {
+  console.error('❌ Erro ao iniciar o servidor:', err);
 });
