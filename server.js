@@ -25,10 +25,6 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: { secure: false } // não usar "secure: true" sem HTTPS
-
-
-
-
 }));
 
 // LOGIN
@@ -112,7 +108,11 @@ app.post('/conteudo', async (req, res) => {
     }
 
     const novo = await prisma.conteudo.create({
-      data: { chave, valor },
+        data: {
+            chave,
+            valor,
+            pai: pai ?? null // se pai for undefined, vai como null
+          },
     });
 
 
