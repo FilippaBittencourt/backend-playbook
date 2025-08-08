@@ -17,4 +17,5 @@ model Conteudo {
   id      String  @id @default(cuid())
   chave   String  @unique
   valor   String
+  pai   String?
 }
