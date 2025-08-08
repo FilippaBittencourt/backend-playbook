@@ -11,11 +11,21 @@ const prisma = new PrismaClient();
 const app = express();
 const PORT = 3001;
 
+const allowedOrigins = ['http://localhost:8080', 'https://playbook-polar.vercel.app'];
+
 // Middlewares
 app.use(cors({
-  origin: 'http://localhost:8080', // endereço do seu Vite
-  credentials: true
-}));
+    origin: function(origin, callback){
+      // permite requests sem origin (como Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = 'O CORS não permite acesso deste domínio.';
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    credentials: true
+  }));
 
 app.use(bodyParser.json());
 
