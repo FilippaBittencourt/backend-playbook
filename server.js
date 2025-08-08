@@ -55,11 +55,6 @@ app.get('/verificar-autenticacao', (req, res) => {
 // LOGOUT
 app.post('/logout', (req, res) => {
   req.session.destroy(() => {
-
-
-
-
-
     res.json({ sucesso: true });
   });
 });
@@ -67,13 +62,13 @@ app.post('/logout', (req, res) => {
 // ATUALIZA conteúdo
 app.put('/conteudo/:chave', async (req, res) => {
   const { chave } = req.params;
-  const { valor } = req.body;
+  const { valor, pai } = req.body;
 
   try {
     const resultado = await prisma.conteudo.upsert({
       where: { chave },
-      update: { valor },
-      create: { chave, valor },
+      update: { valor, pai },
+      create: { chave, valor, pai },
     });
 
     res.json({ sucesso: true, resultado });
@@ -105,7 +100,7 @@ app.get('/conteudo/:chave', async (req, res) => {
 
 // CRIA novo conteúdo
 app.post('/conteudo', async (req, res) => {
-  const { chave, valor } = req.body;
+  const { chave, valor, pai } = req.body;
 
   try {
     const existente = await prisma.conteudo.findUnique({
