@@ -139,28 +139,33 @@ app.get('/conteudos', async (req, res) => {
 
 // DELETA conteúdo por chave
 app.delete('/conteudo/:chave', async (req, res) => {
-  const { chave } = req.params;
-
-  try {
-    const existente = await prisma.conteudo.findUnique({
-      where: { chave },
-    });
-
-    if (!existente) {
-      return res.status(404).json({ erro: 'Conteúdo não encontrado' });
+    const { chave } = req.params;
+  
+    try {
+      const existente = await prisma.conteudo.findUnique({
+        where: { chave },
+      });
+  
+      if (!existente) {
+        return res.status(404).json({ erro: 'Conteúdo não encontrado' });
+      }
+  
+      // 1️⃣ Deleta todos os filhos que têm "pai" igual à chave
+      await prisma.conteudo.deleteMany({
+        where: { pai: chave },
+      });
+  
+      // 2️⃣ Deleta o próprio conteúdo
+      await prisma.conteudo.delete({
+        where: { chave },
+      });
+  
+      res.json({ sucesso: true, mensagem: `Conteúdo '${chave}' e seus filhos foram deletados com sucesso.` });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ erro: 'Erro ao deletar o conteúdo' });
     }
-
-    await prisma.conteudo.delete({
-      where: { chave },
-    });
-
-
-    res.json({ sucesso: true, mensagem: `Conteúdo '${chave}' deletado com sucesso.` });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ erro: 'Erro ao deletar o conteúdo' });
-  }
-});
+  });
 
 
 app.get('/', async (req, res) => {
