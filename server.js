@@ -1,9 +1,10 @@
+// server.js
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { encontrarUsuario } = require('./usuarios');
-const { PrismaClient } = require('@prisma/client'); // Importado aqui em cima
+const { PrismaClient } = require('@prisma/client');
 
 console.log('🔍 DATABASE_URL =', process.env.DATABASE_URL);
 
@@ -15,20 +16,17 @@ const allowedOrigins = ['http://localhost:8080', 'https://playbook-polar.vercel.
 
 // Middlewares
 app.use(cors({
-    origin: function(origin, callback){
-      // permite requests sem origin (como Postman)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = 'O CORS não permite acesso deste domínio.';
-        return callback(new Error(msg), false);
-      }
-      return callback(null, true);
-    },
-    credentials: true
-  }));
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // permite requests sem origin (ex: Postman)
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('O CORS não permite acesso deste domínio.'), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 
 app.use(bodyParser.json());
-
 
 app.use(session({
   secret: 'segredoPolar',
@@ -118,13 +116,12 @@ app.post('/conteudo', async (req, res) => {
     }
 
     const novo = await prisma.conteudo.create({
-        data: {
-            chave,
-            valor,
-            pai: pai ?? null // se pai for undefined, vai como null
-          },
+      data: {
+        chave,
+        valor,
+        pai: pai ?? null
+      },
     });
-
 
     res.status(201).json({ sucesso: true, conteudo: novo });
   } catch (error) {
@@ -133,13 +130,10 @@ app.post('/conteudo', async (req, res) => {
   }
 });
 
-// LISTA todos os conteúdos
+// LISTA todos os conteúdos (sem ordenação)
 app.get('/conteudos', async (req, res) => {
   try {
-    const conteudos = await prisma.conteudo.findMany({
-      orderBy: { chave: 'asc' } // opcional: ordena alfabeticamente
-    });
-
+    const conteudos = await prisma.conteudo.findMany();
     res.json(conteudos);
   } catch (error) {
     console.error(error);
@@ -147,52 +141,39 @@ app.get('/conteudos', async (req, res) => {
   }
 });
 
-// DELETA conteúdo por chave
+// DELETA conteúdo por chave (e filhos)
 app.delete('/conteudo/:chave', async (req, res) => {
-    const { chave } = req.params;
-  
-    try {
-      const existente = await prisma.conteudo.findUnique({
-        where: { chave },
-      });
-  
-      if (!existente) {
-        return res.status(404).json({ erro: 'Conteúdo não encontrado' });
-      }
-  
-      // 1️⃣ Deleta todos os filhos que têm "pai" igual à chave
-      await prisma.conteudo.deleteMany({
-        where: { pai: chave },
-      });
-  
-      // 2️⃣ Deleta o próprio conteúdo
-      await prisma.conteudo.delete({
-        where: { chave },
-      });
-  
-      res.json({ sucesso: true, mensagem: `Conteúdo '${chave}' e seus filhos foram deletados com sucesso.` });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ erro: 'Erro ao deletar o conteúdo' });
-    }
-  });
+  const { chave } = req.params;
 
-
-app.get('/', async (req, res) => {
   try {
-    // Apenas um teste de conexão simples ao banco
-    await prisma.$queryRaw`SELECT 1`;
-    res.send('🎉 Backend conectado ao DB com sucesso!');
-  } catch (e) {
-    console.error('Erro de conexão:', e);
-    res.status(500).send('❌ Falha na conexão com o DB');
+    const existente = await prisma.conteudo.findUnique({
+      where: { chave },
+    });
+
+    if (!existente) {
+      return res.status(404).json({ erro: 'Conteúdo não encontrado' });
+    }
+
+    // Deleta todos os filhos
+    await prisma.conteudo.deleteMany({
+      where: { pai: chave },
+    });
+
+    // Deleta o próprio conteúdo
+    await prisma.conteudo.delete({
+      where: { chave },
+    });
+
+    res.json({ sucesso: true, mensagem: `Conteúdo '${chave}' e seus filhos foram deletados com sucesso.` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: 'Erro ao deletar o conteúdo' });
   }
 });
 
 // Health check e teste de conexão ao banco
 app.get('/', async (req, res) => {
   try {
-    // Executa uma query simples só para testar a conexão
     await prisma.$queryRaw`SELECT 1`;
     res.send('🎉 Backend conectado ao DB com sucesso!');
   } catch (e) {
@@ -201,7 +182,7 @@ app.get('/', async (req, res) => {
   }
 });
 
-// INICIA O SERVIDOR (deve ficar por último!)
+// INICIA O SERVIDOR
 app.listen(PORT, () => {
   console.log(`🔐 Backend rodando em http://localhost:${PORT}`);
 });
