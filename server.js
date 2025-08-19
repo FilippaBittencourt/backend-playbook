@@ -66,13 +66,24 @@ app.post('/logout', (req, res) => {
 // ATUALIZA conteúdo
 app.put('/conteudo/:chave', async (req, res) => {
   const { chave } = req.params;
-  const { valor, pai } = req.body;
+  const { valor, pai, ordem } = req.body;
 
   try {
     const resultado = await prisma.conteudo.upsert({
       where: { chave },
-      update: { valor, pai },
-      create: { chave, valor, pai },
+      update: { 
+        valor, 
+        pai, 
+        ordem: ordem ?? undefined, 
+        createdAt: new Date() // força atualização sempre que editar
+      },
+      create: { 
+        chave, 
+        valor, 
+        pai, 
+        ordem: ordem ?? 0,
+        createdAt: new Date()
+      },
     });
 
     res.json({ sucesso: true, resultado });
@@ -104,7 +115,7 @@ app.get('/conteudo/:chave', async (req, res) => {
 
 // CRIA novo conteúdo
 app.post('/conteudo', async (req, res) => {
-  const { chave, valor, pai } = req.body;
+  const { chave, valor, pai, ordem } = req.body;
 
   try {
     const existente = await prisma.conteudo.findUnique({
@@ -119,7 +130,9 @@ app.post('/conteudo', async (req, res) => {
       data: {
         chave,
         valor,
-        pai: pai ?? null
+        pai: pai ?? null,
+        ordem: ordem ?? 0,
+        createdAt: new Date()
       },
     });
 
