@@ -69,18 +69,21 @@ app.put('/conteudo/:chave', async (req, res) => {
   const { valor, pai, ordem } = req.body;
 
   try {
+    const dataToUpdate = {
+      createdAt: new Date(), // sempre atualiza
+    };
+
+    if (valor !== undefined) dataToUpdate.valor = valor;
+    if (pai !== undefined) dataToUpdate.pai = pai;
+    if (ordem !== undefined) dataToUpdate.ordem = ordem;
+
     const resultado = await prisma.conteudo.upsert({
       where: { chave },
-      update: { 
-        valor, 
-        pai, 
-        ordem: ordem ?? undefined, 
-        createdAt: new Date() // força atualização sempre que editar
-      },
+      update: dataToUpdate,
       create: { 
         chave, 
-        valor, 
-        pai, 
+        valor: valor ?? "", // valor precisa existir na criação
+        pai: pai ?? null,
         ordem: ordem ?? 0,
         createdAt: new Date()
       },
