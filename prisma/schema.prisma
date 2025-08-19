@@ -18,4 +18,9 @@ model Conteudo {
   chave   String  @unique
   valor   String
   pai   String?
+  createdAt  DateTime @default(now())
+  ordem      Int      @default(0)
+
+  @@index([pai, createdAt])
+  @@index([pai, ordem])
 }
