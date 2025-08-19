@@ -149,13 +149,18 @@ app.post('/conteudo', async (req, res) => {
 // LISTA todos os conteúdos (sem ordenação)
 app.get('/conteudos', async (req, res) => {
   try {
-    const conteudos = await prisma.conteudo.findMany();
+    const conteudos = await prisma.conteudo.findMany({
+      orderBy: {
+        ordem: 'asc' // ordem crescente
+      }
+    });
     res.json(conteudos);
   } catch (error) {
     console.error(error);
     res.status(500).json({ erro: 'Erro ao listar os conteúdos' });
   }
 });
+
 
 // DELETA conteúdo por chave (e filhos)
 app.delete('/conteudo/:chave', async (req, res) => {
