@@ -10,17 +10,9 @@ console.log('🔍 DATABASE_URL =', process.env.DATABASE_URL);
 
 const prisma = new PrismaClient();
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = 3001;
 
-// Necessário em plataformas com proxy (Render) para cookies funcionarem corretamente
-app.set('trust proxy', 1);
-
-// Ajuste CORS: inclua aqui depois a URL do seu serviço no Render
-const allowedOrigins = [
-  'http://localhost:8080',
-  'https://playbook-polar.vercel.app',
-  // 'https://SEU-SERVICO.onrender.com'  // <- adicione a URL real do backend no Render
-];
+const allowedOrigins = ['http://localhost:8080', 'https://playbook-polar.vercel.app'];
 
 // Middlewares
 app.use(cors({
@@ -36,15 +28,11 @@ app.use(cors({
 
 app.use(bodyParser.json());
 
-// Sessão: cookie seguro em produção (HTTPS no Render) + sameSite none
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'segredoPolar',
+  secret: 'segredoPolar',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  }
+  cookie: { secure: false } // não usar "secure: true" sem HTTPS
 }));
 
 // LOGIN
@@ -75,14 +63,14 @@ app.post('/logout', (req, res) => {
   });
 });
 
-// ATUALIZA conteúdo (upsert)
+// ATUALIZA conteúdo
 app.put('/conteudo/:chave', async (req, res) => {
   const { chave } = req.params;
   const { valor, pai, ordem } = req.body;
 
   try {
     const dataToUpdate = {
-      createdAt: new Date(),
+      createdAt: new Date(), // sempre atualiza
     };
 
     if (valor !== undefined) dataToUpdate.valor = valor;
@@ -92,9 +80,9 @@ app.put('/conteudo/:chave', async (req, res) => {
     const resultado = await prisma.conteudo.upsert({
       where: { chave },
       update: dataToUpdate,
-      create: {
-        chave,
-        valor: valor ?? "",
+      create: { 
+        chave, 
+        valor: valor ?? "", // valor precisa existir na criação
         pai: pai ?? null,
         ordem: ordem ?? 0,
         createdAt: new Date()
@@ -108,7 +96,7 @@ app.put('/conteudo/:chave', async (req, res) => {
   }
 });
 
-// BUSCA conteúdo por chave
+// BUSCA conteúdo
 app.get('/conteudo/:chave', async (req, res) => {
   const { chave } = req.params;
 
@@ -158,11 +146,13 @@ app.post('/conteudo', async (req, res) => {
   }
 });
 
-// LISTA todos os conteúdos (ordenados por 'ordem' asc)
+// LISTA todos os conteúdos (sem ordenação)
 app.get('/conteudos', async (req, res) => {
   try {
     const conteudos = await prisma.conteudo.findMany({
-      orderBy: { ordem: 'asc' }
+      orderBy: {
+        ordem: 'asc' // ordem crescente
+      }
     });
     res.json(conteudos);
   } catch (error) {
@@ -170,6 +160,7 @@ app.get('/conteudos', async (req, res) => {
     res.status(500).json({ erro: 'Erro ao listar os conteúdos' });
   }
 });
+
 
 // DELETA conteúdo por chave (e filhos)
 app.delete('/conteudo/:chave', async (req, res) => {
@@ -184,8 +175,15 @@ app.delete('/conteudo/:chave', async (req, res) => {
       return res.status(404).json({ erro: 'Conteúdo não encontrado' });
     }
 
-    await prisma.conteudo.deleteMany({ where: { pai: chave } });
-    await prisma.conteudo.delete({ where: { chave } });
+    // Deleta todos os filhos
+    await prisma.conteudo.deleteMany({
+      where: { pai: chave },
+    });
+
+    // Deleta o próprio conteúdo
+    await prisma.conteudo.delete({
+      where: { chave },
+    });
 
     res.json({ sucesso: true, mensagem: `Conteúdo '${chave}' e seus filhos foram deletados com sucesso.` });
   } catch (error) {
