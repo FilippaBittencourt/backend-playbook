@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "server.js",
-  "description": "",
+  "description": "Backend Playbook Polar",
   "license": "ISC",
   "author": "",
   "keywords": [],
@@ -10,7 +10,9 @@
     "dev": "node server.js",
     "postinstall": "prisma generate",
     "migrate:deploy": "prisma migrate deploy",
-    "start": "npm run migrate:deploy && node server.js",
+    "start": "node server.js",
+    "render-start": "npm run migrate:deploy && node server.js",
+    "build": "echo \"nothing to build\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
